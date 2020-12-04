@@ -2,6 +2,8 @@ import React from 'react';
 import { Text, View, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import * as Permissions from 'expo-permissions';
 import {BarCodeScanner} from 'expo-barcode-scanner'
+import firebase from 'firebase';
+import db from '../config'
 
 export default class TransactionScreen extends React.Component {
    constructor(){
@@ -10,7 +12,8 @@ export default class TransactionScreen extends React.Component {
        hasCameraPermissions:null,
        scanned:false,
        scannedData:'',
-       buttonState:'normal'
+       buttonState:'normal',
+       transactionMessage : ''
      }
    }
   getCameraPermissions=async()=>{
@@ -45,6 +48,82 @@ else if (buttonState=="StudentId"){
 }
 
  }
+
+
+ initiateBookIssue = async ()=>{
+
+  db.collection("transaction").add({
+
+    'studentId': this.state.scannedStudentId,
+    'bookId' : this.state.scannedBookId,
+    'data' : firebase.firestore.Timestamp.now().toDate(), 
+     'transactionType': "Issue"
+  })
+
+  db.collection("books").doc(this.state.scannedBookId).update({
+    'bookAvailability': false
+  })
+
+  db.collection("students").doc(this.state.scannedStudentId).update({
+   'numberOfBooksIssued' : firebase.firestore.FieldVlaue.increment(1)
+  })
+
+this.setState({
+  scannedStudentId: '',
+  scannedBookId: ''
+})
+
+
+}
+
+initiateBookReturn = async ()=>{
+   
+  db.collection("transactions").add({
+    'studentId' : this.state.scannedStudentId,
+    'bookId': this.state.scannedBookId,
+    'date': firebase.firestore.Timestamp.now().toDate(),
+    'transactionType' : "Return"
+
+  })
+
+  db.collection("books").doc(this.state.scannedBookId).update({
+     'bookAvailability': true
+  })
+
+  db.collection("students").doc(this.state.scannedStudentId).update({
+    'numberOfBooksIssued': firebase.firestore.FieldVlaue.increment(-1)
+ })
+
+this.setState({
+  scannedStudentId: '',
+  scannedBookId: ''
+})
+
+}
+
+
+handleTransaction = async()=>{
+  var transactionMessage = null;
+  db.collection("books").doc(this.state.scannedBookId).get()
+  .then((doc)=>{
+    var book = doc.data()
+    if(book.bookAvailability){
+      this.initiateBookIssue();
+      transactionMessage = "Book Issued"
+    }
+    else{
+      this.initiateBookReturn();
+      transactionMessage = "Book Returned"
+    }
+  })
+
+  this.setState({
+    transactionMessage : transactionMessage
+  })
+}
+
+
+
 
 
   render() {
