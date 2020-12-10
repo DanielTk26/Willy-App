@@ -1,7 +1,7 @@
 import React from 'react';
-import { Text, View, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import { Text, View, TouchableOpacity, StyleSheet, TextInput, KeyboardAvoidingView, ToastAndroid, Alert } from 'react-native';
 import * as Permissions from 'expo-permissions';
-import {BarCodeScanner} from 'expo-barcode-scanner'
+import {BarCodeScanner} from 'expo-barcode-scanner';
 import firebase from 'firebase';
 import db from '../config'
 
@@ -9,14 +9,18 @@ export default class TransactionScreen extends React.Component {
    constructor(){
      super();
      this.state = {
+     
        hasCameraPermissions:null,
        scanned:false,
-       scannedData:'',
+       scannedBookId: '',
+       scannedStudentId: '',
        buttonState:'normal',
        transactionMessage : ''
-     }
+     
+      }
    }
-  getCameraPermissions=async()=>{
+
+getCameraPermissions=async()=>{
 
  const {status}=await Permissions.askAsync(Permissions.CAMERA);
  this.setState({
@@ -24,9 +28,7 @@ export default class TransactionScreen extends React.Component {
    buttonState: id,
    scanned = false
  });
-
   }
-  
  handleBarCodeScanned=async({type,data})=>{
   const {buttonState} = this.state
 
@@ -38,7 +40,7 @@ export default class TransactionScreen extends React.Component {
    });
  }
 
-else if (buttonState=="StudentId"){
+else if (buttonState==="StudentId"){
  this.setState({
    scanned:true,
    scannedSudentId: data,
@@ -68,12 +70,6 @@ else if (buttonState=="StudentId"){
    'numberOfBooksIssued' : firebase.firestore.FieldVlaue.increment(1)
   })
 
-this.setState({
-  scannedStudentId: '',
-  scannedBookId: ''
-})
-
-
 }
 
 initiateBookReturn = async ()=>{
@@ -94,26 +90,22 @@ initiateBookReturn = async ()=>{
     'numberOfBooksIssued': firebase.firestore.FieldVlaue.increment(-1)
  })
 
-this.setState({
-  scannedStudentId: '',
-  scannedBookId: ''
-})
-
 }
 
-
 handleTransaction = async()=>{
-  var transactionMessage = null;
+  var transactionMessage
   db.collection("books").doc(this.state.scannedBookId).get()
   .then((doc)=>{
     var book = doc.data()
     if(book.bookAvailability){
       this.initiateBookIssue();
       transactionMessage = "Book Issued"
+      ToastAndroid.show(transactionMessage, ToastAndroid.SHORT);
     }
     else{
       this.initiateBookReturn();
       transactionMessage = "Book Returned"
+      ToastAndroid.show(transactionMessage,ToastAndroid.SHORT)
     }
   })
 
@@ -121,9 +113,6 @@ handleTransaction = async()=>{
     transactionMessage : transactionMessage
   })
 }
-
-
-
 
 
   render() {
@@ -142,7 +131,7 @@ handleTransaction = async()=>{
 
     else if (buttonState === "normal"){
       return(
-        <View style={styles.container}>
+     <KeyboardAvoidingView style={styles.container} behavior="padding" enabled>
           <View>
             <Image
               source={require("../assets/booklogo.jpg")}
@@ -175,7 +164,18 @@ handleTransaction = async()=>{
             <Text style={styles.buttonText}>Scan</Text>
           </TouchableOpacity>
           </View>
-        </View>
+     
+     <TouchableOpacity
+        style={styles.submitButton}
+         onPress={async()=>{
+             var transactionMessage = this.handleTransaction();
+             this.setState(
+             {scanned: '',
+              scannedStudentId: ''})
+         }}>
+    <Text style={styles.submitButtonText}>Submit</Text>
+         </TouchableOpacity>
+        </KeyboardAvoidingView>
       );
     }
   }
@@ -223,8 +223,20 @@ handleTransaction = async()=>{
       width: 50,
       borderWidth: 1.5,
       borderLeftWidth:0
+    },
+
+    submitButton:{
+     backgroundColor: '#FBC02D',
+     width:100,
+     height:50
+    },
+
+    submitButtonText:{
+      padding:10,
+      textAlign:'center',
+      fontSize:20,
+      fontWeight:"bold",
+      color:'white'
     }
 
   }),
-
-  
