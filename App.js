@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from "react-navigation-tabs";
 
 import TransactionScreen from "./screens/BookTransactionScreen";
 import SearchScreen from "./screens/SearchScreen";
+import LoginScreen from './screens/LoginScreen'
 
 export default class App extends React.Component {
 
@@ -34,14 +35,19 @@ const TabNavigator = createBottomTabNavigator({
          return(
            <Image 
            source={require('./assets/searchingbook.png')}
-           style = {{width:40, height:40}} />
-         )
+           style = {{width:40, height:40}} 
+         />)
        }
      }
    })
  }
+ 
+ const switchNavigator = createSwitchNavigator({
+   LoginScreen:{screen: LoginScreen},
+   TabNavigator:{screen: TabNavigator}
+  })
 
-const AppContainer = createAppContainer(TabNavigator);
+const AppContainer = createAppContainer(switchNavigator);
 
 
 const styles = StyleSheet.create({
